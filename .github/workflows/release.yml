@@ -83,6 +83,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${{ inputs.tag }}" \
+            -R "${{ github.repository }}" \
             "DS160脱敏工具-Win.zip" \
             "DS160脱敏工具-Mac-通用版.zip" \
             --draft \
