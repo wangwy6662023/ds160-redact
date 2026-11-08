@@ -1,0 +1,30 @@
+name: Build Windows
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: pip install pyinstaller pymupdf "rapidocr-onnxruntime==1.2.3"
+
+      - name: 打包
+        run: pyinstaller --onefile --name DS160 --collect-all rapidocr_onnxruntime ds160_redact.py
+
+      - name: 改名
+        run: |
+          mv dist/DS160.exe "DS160脱敏工具-Win.exe"
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: "bin-Windows"
+          path: "DS160脱敏工具-Win.exe"

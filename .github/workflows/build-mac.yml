@@ -1,0 +1,85 @@
+name: Build Mac
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          # 两个架构都在 macos-latest 上构建：
+          # - Intel 版通过 Rosetta 2 运行 x86_64 Python，打包出原生 Intel 可执行文件
+          #   （macos-13 Intel 跑动机已淘汰，排队极久甚至永远排不上）
+          # - onnxruntime 钉 1.20.1：最后一个支持 macOS Intel 的版本
+          - arch: x64
+            tag: Intel
+          - arch: arm64
+            tag: AppleSilicon
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: ${{ matrix.arch }}
+
+      - name: 安装依赖
+        run: pip install pyinstaller pymupdf "rapidocr-onnxruntime==1.2.3" "onnxruntime==1.20.1"
+
+      - name: 打包
+        run: pyinstaller --onefile --name DS160 --collect-all rapidocr_onnxruntime ds160_redact.py
+
+      - name: 改名
+        run: |
+          mv dist/DS160 "DS160脱敏工具-Mac-${{ matrix.tag }}"
+          chmod +x "DS160脱敏工具-Mac-${{ matrix.tag }}"
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: "bin-${{ matrix.tag }}"
+          path: "DS160脱敏工具-Mac-${{ matrix.tag }}"
+
+  package:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载两个架构的程序
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "bin-*"
+          path: pkg
+          merge-multiple: true
+
+      - name: 生成通用启动器并打包
+        run: |
+          cd pkg
+          cat > "DS160脱敏工具.command" <<'EOF'
+          #!/bin/bash
+          # DS160 脱敏工具（Mac 通用启动器）：双击自动识别芯片，无需手动选版本
+          cd "$(dirname "$0")"
+          # 解除系统对两个程序文件的安全限制，免去逐个右键打开
+          xattr -dr com.apple.quarantine "DS160脱敏工具-Mac-Intel" "DS160脱敏工具-Mac-AppleSilicon" 2>/dev/null
+          chmod +x "DS160脱敏工具-Mac-Intel" "DS160脱敏工具-Mac-AppleSilicon" 2>/dev/null
+          # M1/M2/M3/M4 芯片用 AppleSilicon 版，老款 Intel 芯片用 Intel 版
+          if [ "$(uname -m)" = "arm64" ]; then
+              BIN="DS160脱敏工具-Mac-AppleSilicon"
+          else
+              BIN="DS160脱敏工具-Mac-Intel"
+          fi
+          if [ ! -f "$BIN" ]; then
+              echo "错误：未找到 $BIN，请确保三个文件放在同一文件夹。"
+              exit 1
+          fi
+          "./$BIN"
+          EOF
+          chmod +x "DS160脱敏工具.command"
+          zip -r "DS160脱敏工具-Mac-通用版.zip" .
+
+      - name: 上传通用版成品
+        uses: actions/upload-artifact@v4
+        with:
+          name: "DS160脱敏工具-Mac-通用版"
+          path: "pkg/DS160脱敏工具-Mac-通用版.zip"

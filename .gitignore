@@ -1,0 +1,25 @@
+# 构建产物
+dist/
+build/
+*.spec
+__pycache__/
+*.pyc
+.venv/
+
+# 用户数据 —— 绝不提交任何真实签证材料
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.webp
+脱敏材料/
+
+# 合成测试样例与文档截图例外（仅允许假数据）
+!samples/**
+!docs/**
+
+# 二进制
+*.exe
+*.zip
+*.dmg
