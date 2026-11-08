@@ -46,8 +46,8 @@ jobs:
           if [ -z "$MAC_ZIP" ] || [ -z "$WIN_EXE" ]; then
             echo "产物定位失败：MAC=$MAC_ZIP WIN=$WIN_EXE"; exit 1
           fi
-          mv "$MAC_ZIP" "DS160脱敏工具-Mac-通用版.zip"
-          (cd win && zip -q "../DS160脱敏工具-Win.zip" *.exe)
+          mv "$MAC_ZIP" "DS160-Redact-Mac-Universal.zip"
+          (cd win && zip -q "../DS160-Redact-Win.zip" *.exe)
           ls -la *.zip
 
       - name: 生成发布说明
@@ -61,8 +61,8 @@ jobs:
 
           | 文件 | 系统 | 用法 |
           |------|------|------|
-          | `DS160脱敏工具-Win.zip` | Windows | 解压，把 PDF/截图放到 exe 同文件夹，双击运行 |
-          | `DS160脱敏工具-Mac-通用版.zip` | macOS | 解压（可能需解压两次，最终三个文件放同一文件夹），双击 `.command` 启动 |
+          | `DS160-Redact-Win.zip` | Windows | 解压，把 PDF/截图放到 exe 同文件夹，双击运行 |
+          | `DS160-Redact-Mac-Universal.zip` | macOS | 解压（可能需解压两次，最终三个文件放同一文件夹），双击 `.command` 启动 |
 
           ### 特性
 
@@ -78,14 +78,29 @@ jobs:
           - 源码与许可（AGPL-3.0）见仓库首页
           EOF
 
+      - name: 设置附件中文标签
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          REPO="${{ github.repository }}"
+          REL_ID=$(gh api "repos/$REPO/releases" --jq '[.[] | select(.draft)][0].id')
+          for pair in "DS160-Redact-Win|Windows 版——解压后把 PDF/截图放同文件夹，双击运行" "DS160-Redact-Mac-Universal|macOS 通用版——Intel/Apple 芯片通吃，解压两次得三文件，双击 .command 启动"; do
+            NAME="${pair%%|*}"
+            LABEL="${pair#*|}"
+            AID=$(gh api "repos/$REPO/releases/$REL_ID/assets" --jq ".[] | select(.name | startswith(\"$NAME\")) | .id")
+            if [ -n "$AID" ]; then
+              gh api -X PATCH "repos/$REPO/releases/assets/$AID" -F "label=$LABEL"
+            fi
+          done
+
       - name: 创建草稿 Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${{ inputs.tag }}" \
             -R "${{ github.repository }}" \
-            "DS160脱敏工具-Win.zip" \
-            "DS160脱敏工具-Mac-通用版.zip" \
+            "DS160-Redact-Win.zip" \
+            "DS160-Redact-Mac-Universal.zip" \
             --draft \
             --title "${{ inputs.tag }} 首个开源版本" \
             --notes-file release-notes.md

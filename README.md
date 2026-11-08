@@ -23,13 +23,13 @@
 
 ### Windows
 
-1. 到 [Releases](../../releases) 下载 `DS160脱敏工具-Win.zip`，解压
+1. 到 [Releases](../../releases) 下载 `DS160-Redact-Win.zip`，解压
 2. 把要脱敏的 PDF/截图放到 exe 同一文件夹
 3. 双击运行，结果在「脱敏材料」子文件夹里
 
 ### macOS
 
-1. 下载 `DS160脱敏工具-Mac-通用版.zip`，解压（如果解压出来还是 zip，再解压一次，最终得到三个文件）
+1. 下载 `DS160-Redact-Mac-Universal.zip`，解压（如果解压出来还是 zip，再解压一次，最终得到三个文件）
 2. 三个文件拷到要处理的文件所在文件夹
 3. 双击 `DS160脱敏工具.command`（自动识别 Intel / Apple 芯片）
 4. 首次双击被拦截是正常的安全限制：右键 →「打开」→「打开」；如提示"已损坏"，终端执行 `xattr -cr <拖入文件>` 后再双击
