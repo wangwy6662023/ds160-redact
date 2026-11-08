@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      mac_run_id:
+        description: "Build Mac 的运行 ID"
+        required: true
+        default: "42486495320"
+      win_run_id:
+        description: "Build Windows 的运行 ID"
+        required: true
+        default: "42486488256"
+      tag:
+        description: "发布版本号"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载 Mac 产物
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.mac_run_id }}
+          name: "DS160脱敏工具-Mac-通用版"
+          path: mac
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 下载 Windows 产物
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.win_run_id }}
+          name: "bin-Windows"
+          path: win
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 整理发布包
+        run: |
+          MAC_ZIP=$(find mac -name "*通用版.zip" | head -1)
+          WIN_EXE=$(find win -name "*.exe" | head -1)
+          if [ -z "$MAC_ZIP" ] || [ -z "$WIN_EXE" ]; then
+            echo "产物定位失败：MAC=$MAC_ZIP WIN=$WIN_EXE"; exit 1
+          fi
+          mv "$MAC_ZIP" "DS160脱敏工具-Mac-通用版.zip"
+          (cd win && zip -q "../DS160脱敏工具-Win.zip" *.exe)
+          ls -la *.zip
+
+      - name: 生成发布说明
+        run: |
+          cat > release-notes.md <<'EOF'
+          ## DS-160 隐私脱敏工具 ${{ inputs.tag }}
+
+          首个开源版本：把 DS-160 确认页自动打码，完全离线运行。
+
+          ### 下载哪个文件
+
+          | 文件 | 系统 | 用法 |
+          |------|------|------|
+          | `DS160脱敏工具-Win.zip` | Windows | 解压，把 PDF/截图放到 exe 同文件夹，双击运行 |
+          | `DS160脱敏工具-Mac-通用版.zip` | macOS | 解压（可能需解压两次，最终三个文件放同一文件夹），双击 `.command` 启动 |
+
+          ### 特性
+
+          - 自动识别 40+ 类隐私字段（姓名/护照号/电话/地址/出生日期/SEVIS 等）并马赛克
+          - 申请人照片彩色色块覆盖；日期保留年份、地址保留城市/州，脱敏后仍可核对
+          - 零网络请求：断网可用，欢迎拔网线验证
+          - 无需安装、无需注册
+
+          ### 重要提醒
+
+          - **输出结果请人工复核后再公开分享**（OCR 存在极小概率漏检）
+          - 非官方工具，与美领馆/美国国务院无关；只处理本人或已授权文件
+          - 源码与许可（AGPL-3.0）见仓库首页
+          EOF
+
+      - name: 创建草稿 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ inputs.tag }}" \
+            "DS160脱敏工具-Win.zip" \
+            "DS160脱敏工具-Mac-通用版.zip" \
+            --draft \
+            --title "${{ inputs.tag }} 首个开源版本" \
+            --notes-file release-notes.md
