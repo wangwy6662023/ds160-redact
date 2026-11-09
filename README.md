@@ -34,6 +34,13 @@
 3. 双击 `DS160脱敏工具.command`（自动识别 Intel / Apple 芯片）
 4. 首次双击被拦截是正常的安全限制：右键 →「打开」→「打开」；如提示"已损坏"，终端执行 `xattr -cr <拖入文件>` 后再双击
 
+### 国内网盘下载（不用翻墙）
+
+| 文件 | 链接 | 提取码 |
+|------|------|--------|
+| `DS160-Redact-Win.zip` | [百度网盘](https://pan.baidu.com/s/1_IU5jEiV6UcTvpUuXgRo6w?pwd=b6t5) | `b6t5` |
+| `DS160-Redact-Mac-Universal.zip` | [百度网盘](https://pan.baidu.com/s/1zK7es_jRnROBHeWaiMsXkQ?pwd=rf9r) | `rf9r` |
+
 ### 从源码运行（任意平台）
 
 ```bash
